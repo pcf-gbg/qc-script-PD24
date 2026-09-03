@@ -97,6 +97,19 @@ def fname_to_instrument(infname):
         instrument_name = 'Eclipse_FAIMS'
     elif ('eclipse_' in infname) and ('faims' not in infname):
         instrument_name = 'Eclipse'
+    elif ('ast_' in infname) and ('faims' in infname):
+        instrument_name = 'AST_FAIMS'
+    elif ('ast_' in infname) and ('faims' not in infname):
+        instrument_name = 'AST'
+    elif ('astot_' in infname) and ('faims' in infname):
+        instrument_name = 'AstOT_FAIMS'
+    elif ('astot_' in infname) and ('faims' not in infname):
+        instrument_name = 'AstOT'
+    elif ('eclipse2_' in infname) and ('faims' in infname):
+        instrument_name = 'Eclipse2_FAIMS'
+    elif ('eclipse2_' in infname) and ('faims' not in infname):
+        instrument_name = 'Eclipse2'
+
 
     return instrument_name
 
@@ -464,20 +477,20 @@ def show_histo_fixedbinnum(inlist,labl,binnum):
 
     return True
 
-def show_plots(df,fresh_data,plotsavingpath='D:\\plot.png',onlysave=False):
+def show_plots(df, fresh_data, plotsavingpath='D:\\plot.png', onlysave=False):
     ''' Shows the plots in the pre-defined layout.
-        Requires the DataFrame df with thw latest N results from the database,
-        And the fresh_data dictionary, that contains the necessary arrays from the new data.
-        onlysave - bool, default is False
-        If onlysave is False, the plot will be shown,
-        If onlysave is True, the plot will be saved into the file plotsavingpath
+        Requires the DataFrame df with the latest N results from the database,
+        And the fresh_data dictionary that contains the necessary arrays from the new data.
+        onlysave - bool, default is False.
+        If onlysave is False, the plot will be shown.
+        If onlysave is True, the plot will be saved into the file plotsavingpath.
     '''
     sid, latest_instr, psmnum, text_string = return_latest_psm_is(df, index_col, 'raw_file',
                                                                   'instrument', 'psm_number')
-    f = plt.figure(figsize=(27,12),dpi=100)
+    f = plt.figure(figsize=(27,12), dpi=100)
     grid = plt.GridSpec(3, 7, figure=f, wspace=0.4, hspace=0.3)
 
-    general_title = ('File ' + fresh_data['Tuple for database'][1] + 
+    general_title = ('File ' + fresh_data['Tuple for database'][1] +
                      ' from Instrument ' + latest_instr)
     plt.suptitle(general_title)
 
@@ -526,20 +539,20 @@ def show_plots(df,fresh_data,plotsavingpath='D:\\plot.png',onlysave=False):
                                       'pept_495','pept_567','pept_652','pept_655'),
                           var_name='Peptide',value_name='RT, min')
     plt.subplot(grid[0:2, 6])
-    ax6 = sns.lineplot(x='search_id', y='RT, min', hue='Peptide',
+    ax6 = sns.scatterplot(x='search_id', y='RT, min', hue='Peptide',
                       data=df_hela_rts)
     ax6.legend(loc='lower left', fontsize='x-small', framealpha=0.5)
     
     # 7 Scatter plot of ppm mass error vs precursor m/z
     plt.subplot(grid[1:, 0])
-    ax7 = sns.lineplot(fresh_data['Prec mz array'],fresh_data['ppm error array'],
+    ax7 = sns.scatterplot(fresh_data['Prec mz array'],fresh_data['ppm error array'],
                           alpha=0.4,s=10,c=('#1EA922',),marker='X')
     ax7.set_xlabel('Precursor m/z')
     ax7.set_ylabel('Precursor mass error, ppm')
 
     # 8 Scatter plot of ppm mass error vs retention time
     plt.subplot(grid[1, 1:3])
-    ax8 = sns.lineplot(fresh_data['RT array'],fresh_data['ppm error array'],
+    ax8 = sns.scatterplot(fresh_data['RT array'],fresh_data['ppm error array'],
                           alpha=0.4, s=10,c=('#A9391E',),marker='X')
     ax8.set_xlabel('RT, min')
     ax8.set_ylabel('Precursor mass error, ppm')
@@ -610,10 +623,19 @@ def show_plots(df,fresh_data,plotsavingpath='D:\\plot.png',onlysave=False):
     if onlysave is False:
         plt.show()
     elif onlysave is True:
-        plt.savefig(plotsavingpath)
-        print('Saved the qc plots into the file',plotsavingpath)
-    # ---------------------UNCOMMENT TO SHOW THE PLOT-------------------------
-        os.startfile(plotsavingpath, 'open')
+        try:
+            # Ensure the directory exists before saving
+            os.makedirs(os.path.dirname(plotsavingpath), exist_ok=True)
+            print("Saving plot to:", plotsavingpath)
+            plt.savefig(plotsavingpath)
+            print("Saved the QC plots into the file", plotsavingpath)
+            if os.name == 'nt':
+                os.startfile(plotsavingpath, 'open')
+            else:
+                print("Graph saved to:", plotsavingpath)
+        except Exception as e:
+            print("Error during saving plot:", e)
+            raise
     return True
 
 def testing_load_example_files():
@@ -657,8 +679,16 @@ if __name__ == '__main__':
                 'QEHF':'Z:\\QExactive HF\\QC\\QC_Reports\\QC_DB\\qc_qehf_st191107.db',
                 'Exp':'Z:\\Exploris\\QC\\Reports\\DB\\qc_exploris_st210914.db',
                 'Exp_FAIMS':'Z:\\Exploris\\QC\\Reports\\DB\\qc_exploris_st210914.db',
+##                'AST':'Z:\\Astral\\QC\\Reports\\DB\\qc_astral_st241120.db',
+##                'AST_FAIMS':'Z:\\Astral\QC\\Reports\\DB\\qc_astral_st241120.db',
+                'AST':'Z:\\Astral\\QC\\Reports\\DB\\qc_AST_upd_st241125.db',
+                'AST_FAIMS':'Z:\\Astral\QC\\Reports\\DB\\qc_AST_upd_st241125.db',
+                'AstOT':'Z:\\Astral\\QC\\Reports\\DB\\qc_AST_upd_st241125.db',
+                'AstOT_FAIMS':'Z:\\Astral\QC\\Reports\\DB\\qc_AST_upd_st241125.db',
                 'Eclipse':'Z:\\Eclipse\\QC\\QC_Reports\\QC_DB\\qc_eclipse_st220817.db',
-                'Eclipse_FAIMS':'Z:\\Eclipse\\QC\\QC_Reports\\QC_DB\\qc_eclipse_st220817.db'}
+                'Eclipse_FAIMS':'Z:\\Eclipse\\QC\\QC_Reports\\QC_DB\\qc_eclipse_st220817.db',
+                'Eclipse2':'Z:\\Eclipse2\\QC\\QC_Reports\\QC_DB\\qc_eclipse2_st260902.db',
+                'Eclipse2_FAIMS':'Z:\\Eclipse2\\QC\\QC_Reports\\QC_DB\\qc_eclipse2_st260902.db'}
     
     index_col = 'search_id'
     colnames = ('search_id','raw_file','file_date','search_date','instrument',
