@@ -12,9 +12,9 @@ import sys
 import warnings
 
 
-""" Direct questions and concerns regarding this script to Egor Vorontsov
+''' Direct questions and concerns regarding this script to Egor Vorontsov
     egor.vorontsov@gu.se
-"""
+'''
 
 def bin_number(inlist,divider):
     span = max(inlist) - min(inlist)
@@ -22,14 +22,14 @@ def bin_number(inlist,divider):
     return int(span/divider)
 
 def create_reporting_fnames(qc_db_path, num_res, inst_name, raw_fname):
-    """ Creates the filenames for the graphical report and Excel output
+    ''' Creates the filenames for the graphical report and Excel output
         Based on the relative path which depends on the QC database path qc_db_path
         num_res: the number of the latest results fetched from the database
         inst_name: instrument name
         raw_fname: raw file name
         returns the dictionary:
         {'excel_out':full path, 'graph_out':full_path}
-    """
+    '''
     qc_db_pobj = pathlib.Path(qc_db_path)
     excel_name = inst_name + '_latest_' + str(num_res) + '_results.xlsx'
     excel_path = qc_db_pobj.parents[1].joinpath(excel_name)
@@ -39,9 +39,9 @@ def create_reporting_fnames(qc_db_path, num_res, inst_name, raw_fname):
     return {'excel_out':excel_path, 'graph_out':png_path}
 
 def find_hela_peptides(in_dfs):
-    """ Finds the retention times of the 7 selected peptides from the Peptide Groups table.
+    ''' Finds the retention times of the 7 selected peptides from the Peptide Groups table.
         Returns 45.0 min if the peptide is not found
-    """
+    '''
     selected_hela_peptides = {'STELLIR':'pept_416',
                               'HLQLAIR':'pept_425',
                               'AGFAGDDAPR':'pept_488',
@@ -72,7 +72,7 @@ def find_hela_peptides(in_dfs):
         return None
 
 def fname_to_instrument(infname):
-    """Determines the instrument name based on the file name"""
+    '''Decides on the instrument name based on the file name'''
     infname = infname.lower()
     instrument_name = None
     if ('lumos_' in infname) and ('faims' in infname):
@@ -89,11 +89,19 @@ def fname_to_instrument(infname):
         instrument_name = 'QE'
     elif ('elite_' in infname):
         instrument_name = 'Elite'
+    elif ('exp_' in infname) and ('faims' not in infname):
+        instrument_name = 'Exp'
+    elif ('exp_' in infname) and ('faims' in infname):
+        instrument_name = 'Exp_FAIMS'
+    elif ('eclipse_' in infname) and ('faims' in infname):
+        instrument_name = 'Eclipse_FAIMS'
+    elif ('eclipse_' in infname) and ('faims' not in infname):
+        instrument_name = 'Eclipse'
 
     return instrument_name
 
 def generate_input_dict(in_dfs):
-    """ Reads the dictionary of the experimental tables.
+    ''' Reads the dictionary of the experimental tables.
         Generates the tuple for writing into the SQLite DB,
         As well as the arrays that are used for plotting.
         The output is a dictionary:
@@ -107,7 +115,7 @@ def generate_input_dict(in_dfs):
         'RT array':np.array,
         'Search engine score array':np.array
         }
-    """
+    '''
     rawfnames, rawfdates, instr_from_fn, _ = parse_table_input_file(in_dfs)
     search_time = datetime.datetime.now().isoformat(timespec='seconds')
     
@@ -155,6 +163,19 @@ def generate_input_dict(in_dfs):
                  hela_pept_rts['pept_495'],hela_pept_rts['pept_567'],hela_pept_rts['pept_652'],
                  hela_pept_rts['pept_655'], ('Searched with '+str(sengine)))
 
+##    colnames = ('search_id','raw_file','file_date','search_date','instrument',
+##                'protein_number','peptide_number','psm_number',
+##                'msms_number','id_rate',
+##                'mean_psm_it_ms','median_psm_it_ms',
+##                'mean_msms_it_ms','median_msms_it_ms',
+##                'mean_mz_err_ppm','median_mz_err_ppm','mz_err_ppm_stdev',
+##                'total_prec_intensity','mean_prec_intensity',
+##                'mean_sengine_score',
+##                'mean_peak_width','peak_width_stdev',
+##                'pept_416','pept_425','pept_488','pept_495',
+##                'pept_567','pept_652','pept_655',
+##                'comment')
+
     out_dict = {}
     out_dict['Tuple for database'] = out_tuple
     out_dict['PSM inj time array'] = psm_inj_times
@@ -167,6 +188,33 @@ def generate_input_dict(in_dfs):
     out_dict['Search engine score array'] = se_scores
     
     return out_dict
+
+def generate_simulated_tuple():
+
+    fname = 'Nothing_' + str(np.random.randint(10,200)) + '.raw'
+    d = '2019/10/' + str(np.random.randint(10,31))
+    s = '2019/10/24'
+    i = 'Eclipse'
+    psmn = np.random.randint(8000,14000)
+    pn = psmn - np.random.randint(50,500)
+    msmsn = np.random.randint(25000,33000)
+    mean_psm_it = 10 + 15*np.random.random()
+    median_psm_it = mean_psm_it - np.random.randint(1,5)
+    mean_it = 15 + 15*np.random.random()
+    median_it = mean_it - np.random.randint(1,5)
+    mean_er = np.random.randint(-5,5)*np.random.random()
+    median_er = mean_er - 0.1*mean_er*np.random.random()
+    er_dev = abs(mean_er)*0.5*np.random.random()
+    mean_int = np.random.randint(600000,2000000)
+    mean_score = 15 + 15*np.random.random()
+    
+    out_tuple = (None,fname,d,s,i,1800,pn,psmn,msmsn,psmn/msmsn,
+                 mean_psm_it,median_psm_it,mean_it,median_it,
+                 mean_er,median_er,er_dev,
+                 mean_int,mean_score,
+                 27,25,19.1,35.5,16.5,32.1,40.6,
+                 'Simulated')
+    return out_tuple
 
 def get_console_arg():
     try:
@@ -181,13 +229,13 @@ def get_console_arg():
         return None
 
 def parse_cons_features(in_dfs):
-    """ If the Consensus Features table is present, returns the tuple with peak properties
+    ''' If the Consensus Features table is present, returns the tuple with peak properties
         (for features with charge 2 or higher):
         (mean peak width in s, st dev of peak width in s,
         numpy array of peak widths in s, numpy array of feature intensity)
         If the Consensus Features table is absent, returns
         (None, None, numpy array of zeroes, None)
-    """
+    '''
     if 'Consensus Features' in in_dfs.keys():
         try:
             df = in_dfs['Consensus Features']
@@ -221,9 +269,9 @@ def parse_cons_features(in_dfs):
         return (None, None, np.zeros(100,dtype=int), None, None)
 
 def parse_qc_table_msms(in_dfs):
-    """ Returns a tuple of numpy arrays
+    ''' Returns a tuple of numpy arrays
         (injection times array, precursor intens array)
-    """
+        '''
     try:
         # Select the MSMS df from the dictionary
         df = in_dfs['MS/MS Spectrum Info']
@@ -236,13 +284,13 @@ def parse_qc_table_msms(in_dfs):
         return None
 
 def parse_qc_table_psm(in_dfs):
-    """ Returns a tuple of numpy arrays
+    ''' Returns a tuple of numpy arrays
         (m/z values, MH+ mass values, ppm mass errors, ret times,
         search engine scores, search engine, ions matched per PSM)
         The search engine score to use dependes on what columns are present in the file.
         If neither Ions Score nor Xcorr column is found, returns an array made of zeros:
         sengine: 'Mascot' or 'Sequest', default is 'Mascot'
-        """
+        '''
 
     try:
         # Select the score. Currently recognizes Mascot and Sequest
@@ -287,9 +335,9 @@ def parse_qc_table_psm(in_dfs):
         return None
 
 def parse_table_input_file(in_dfs):
-    """ Returns a tuple
+    ''' Returns a tuple
         (instrument name list, creation date list, instr from name list, instr from metadata list)
-        """
+        '''
     try:
         # Select the Input Files df from the dictionary
         df = in_dfs['Input Files']
@@ -363,8 +411,8 @@ def return_last_rows(conn, table, index_col, num, colnames):
     return df
 
 def return_latest_psm_is(df, id_col, file_col, instr_col, psm_col):
-    """ Extracts info on PSM number, search ID and Instrument from the last row in DB
-    """
+    ''' Extracts info on PSM number, search ID and Instrument from the last row in DB
+    '''
     last_row = df.iloc[-1]
     search_id = last_row[id_col]
     instr = last_row[instr_col]
@@ -374,8 +422,8 @@ def return_latest_psm_is(df, id_col, file_col, instr_col, psm_col):
     return (search_id, instr, psm, psm_string)
 
 def return_peptide_number(in_dfs):
-    """ Returns the number of peptides based on the Peptide table
-        """
+    ''' Returns the number of peptides based on the Peptide table
+        '''
     try:
         # Select the Peptide Groups df from the dictionary
         df = in_dfs['Peptide Groups']
@@ -385,8 +433,8 @@ def return_peptide_number(in_dfs):
         return None
 
 def return_protein_number(in_dfs):
-    """ Returns the number of Master proteins based on the Proteins table
-        """
+    ''' Returns the number of Master proteins based on the Proteins table
+        '''
     try:
         # Select the Proteins df from the dictionary
         df = in_dfs['Proteins']
@@ -400,10 +448,13 @@ def return_protein_number(in_dfs):
 def show_histo(inlist,labl,divider):
     binnum = bin_number(inlist,divider)
     ax = plt.hist(x=inlist, bins=binnum,color='blue',alpha=0.7,rwidth=0.85)
-
+##    plt.grid(axis='y', alpha=0.75)
     plt.xlabel(labl)
     plt.ylabel('Frequency')
-
+##    plt.title('Wildcard Modification Masses from Byonic Search;'+
+##              ' Searched with fixed TMT at N-termini and K, and fixed CAM on C')
+##    plt.xticks(customticks)
+##    plt.show()
     return True
 
 def show_histo_fixedbinnum(inlist,labl,binnum):
@@ -414,13 +465,13 @@ def show_histo_fixedbinnum(inlist,labl,binnum):
     return True
 
 def show_plots(df,fresh_data,plotsavingpath='D:\\plot.png',onlysave=False):
-    """ Shows the plots in the pre-defined layout.
+    ''' Shows the plots in the pre-defined layout.
         Requires the DataFrame df with thw latest N results from the database,
         And the fresh_data dictionary, that contains the necessary arrays from the new data.
         onlysave - bool, default is False
         If onlysave is False, the plot will be shown,
         If onlysave is True, the plot will be saved into the file plotsavingpath
-    """
+    '''
     sid, latest_instr, psmnum, text_string = return_latest_psm_is(df, index_col, 'raw_file',
                                                                   'instrument', 'psm_number')
     f = plt.figure(figsize=(27,12),dpi=100)
@@ -481,14 +532,14 @@ def show_plots(df,fresh_data,plotsavingpath='D:\\plot.png',onlysave=False):
     
     # 7 Scatter plot of ppm mass error vs precursor m/z
     plt.subplot(grid[1:, 0])
-    ax7 = sns.scatterplot(fresh_data['Prec mz array'],fresh_data['ppm error array'],
+    ax7 = sns.lineplot(fresh_data['Prec mz array'],fresh_data['ppm error array'],
                           alpha=0.4,s=10,c=('#1EA922',),marker='X')
     ax7.set_xlabel('Precursor m/z')
     ax7.set_ylabel('Precursor mass error, ppm')
 
     # 8 Scatter plot of ppm mass error vs retention time
     plt.subplot(grid[1, 1:3])
-    ax8 = sns.scatterplot(fresh_data['RT array'],fresh_data['ppm error array'],
+    ax8 = sns.lineplot(fresh_data['RT array'],fresh_data['ppm error array'],
                           alpha=0.4, s=10,c=('#A9391E',),marker='X')
     ax8.set_xlabel('RT, min')
     ax8.set_ylabel('Precursor mass error, ppm')
@@ -576,10 +627,9 @@ def testing_load_example_files():
     return df_dict
 
 def write_new_results(conn, table, result_tuple):
-    """You need to make sure that the input tuple has the proper length and format.
+    '''You need to make sure that the input tuple has the proper length and format.
         The function will return False if the writing results in error.
-        But if the writing and successful, but formatting is wrong, it will not check for it.
-        """
+        But if the writing and successful, but formatting is wrong, it will not check for it.'''
     writing_successful = False
     cur = conn.cursor()
 
@@ -600,11 +650,15 @@ def write_new_results(conn, table, result_tuple):
 
 if __name__ == '__main__':
 
-    db_files = {'Lumos':'full path\\qc_lumos_st191029.db',
-                'Lumos_FAIMS':'full path\\qc_lumos_st191029.db',
-                'Fusion':'full path\\qc_fusion_st191029.db',
-                'Fusion_FAIMS':'full path\\qc_fusion_st191029.db',
-                'QEHF':'full path\\qc_qehf_st191107.db'}
+    db_files = {'Lumos':'Z:\\Lumos\\QC\\QC_Reports\\QC_DB\\qc_lumos_st191029.db',
+                'Lumos_FAIMS':'Z:\\Lumos\\QC\\QC_Reports\\QC_DB\\qc_lumos_st191029.db',
+                'Fusion':'Z:\\Fusion\\QC\\QC_Reports\\QC_DB\\qc_fusion_st191029.db',
+                'Fusion_FAIMS':'Z:\\Fusion\\QC\\QC_Reports\\QC_DB\\qc_fusion_st191029.db',
+                'QEHF':'Z:\\QExactive HF\\QC\\QC_Reports\\QC_DB\\qc_qehf_st191107.db',
+                'Exp':'Z:\\Exploris\\QC\\Reports\\DB\\qc_exploris_st210914.db',
+                'Exp_FAIMS':'Z:\\Exploris\\QC\\Reports\\DB\\qc_exploris_st210914.db',
+                'Eclipse':'Z:\\Eclipse\\QC\\QC_Reports\\QC_DB\\qc_eclipse_st220817.db',
+                'Eclipse_FAIMS':'Z:\\Eclipse\\QC\\QC_Reports\\QC_DB\\qc_eclipse_st220817.db'}
     
     index_col = 'search_id'
     colnames = ('search_id','raw_file','file_date','search_date','instrument',
@@ -632,6 +686,9 @@ if __name__ == '__main__':
     tableobj = ius.InputTables(input_params.return_all_table_properties())
     in_dfs = tableobj.return_all_tables()
 
+##    for i in in_dfs.keys():
+##        print(('<' + i + '>'))
+##        print(in_dfs[i].columns)
         
     # The dictionary contains extracted information from the latest Proteome Discoverer search
     fresh_data = generate_input_dict(in_dfs)
@@ -642,6 +699,8 @@ if __name__ == '__main__':
     
     conn = sqlite3.connect(dbase)
     
+##    result_tuple = generate_simulated_tuple()
+##    writing_succeeded = write_new_results(conn, table, result_tuple)
     writing_succeeded = write_new_results(conn, table, fresh_data['Tuple for database'])
 
     df = return_last_rows(conn, table, index_col, num, colnames)
